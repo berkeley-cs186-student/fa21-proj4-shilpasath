@@ -146,9 +146,50 @@ public enum LockType {
         if (required == null || substitute == null) {
             throw new NullPointerException("null lock type");
         }
+
+        if (required.equals(NL)) {
+            return true;
+        } else if (substitute.equals(NL)) {
+            return false;
+        }
+
+        HashMap<List<LockType>, Boolean> list = new HashMap<>();
+
+        list.put(new ArrayList<>(Arrays.asList(IS, IS)), true);
+        list.put(new ArrayList<>(Arrays.asList(IS, IX)), false);
+        list.put(new ArrayList<>(Arrays.asList(IS, S)), false);
+        list.put(new ArrayList<>(Arrays.asList(IS, SIX)), false);
+        list.put(new ArrayList<>(Arrays.asList(IS, X)), false);
+
+        list.put(new ArrayList<>(Arrays.asList(IX, IS)), true);
+        list.put(new ArrayList<>(Arrays.asList(IX, IX)), true);
+        list.put(new ArrayList<>(Arrays.asList(IX, S)), false);
+        list.put(new ArrayList<>(Arrays.asList(IX, SIX)), false);
+        list.put(new ArrayList<>(Arrays.asList(IX, X)), false);
+
+        list.put(new ArrayList<>(Arrays.asList(S, IS)), false);
+        list.put(new ArrayList<>(Arrays.asList(S, IX)), false);
+        list.put(new ArrayList<>(Arrays.asList(S, S)), true);
+        list.put(new ArrayList<>(Arrays.asList(S, SIX)), false);
+        list.put(new ArrayList<>(Arrays.asList(S, X)), false);
+
+        list.put(new ArrayList<>(Arrays.asList(SIX, IS)), false);
+        list.put(new ArrayList<>(Arrays.asList(SIX, IX)), false);
+        list.put(new ArrayList<>(Arrays.asList(SIX, S)), true);
+        list.put(new ArrayList<>(Arrays.asList(SIX, SIX)), true);
+        list.put(new ArrayList<>(Arrays.asList(SIX, X)), false);
+
+        list.put(new ArrayList<>(Arrays.asList(X, IS)), false);
+        list.put(new ArrayList<>(Arrays.asList(X, IX)), false);
+        list.put(new ArrayList<>(Arrays.asList(X, S)), true);
+        list.put(new ArrayList<>(Arrays.asList(X, SIX)), false);
+        list.put(new ArrayList<>(Arrays.asList(X, X)), true);
+
+        List new_list = new ArrayList<>(Arrays.asList(substitute, required));
+        boolean ret = list.get(new_list);
+        return ret;
         // TODO(proj4_part1): implement
 
-        return false;
     }
 
     /**
