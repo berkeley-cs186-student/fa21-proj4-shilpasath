@@ -1,5 +1,10 @@
 package edu.berkeley.cs186.database.concurrency;
 
+import edu.berkeley.cs186.database.common.Pair;
+
+import java.lang.reflect.Array;
+import java.util.*;
+
 /**
  * Utility methods to track the relationships between different lock types.
  */
@@ -21,9 +26,53 @@ public enum LockType {
         if (a == null || b == null) {
             throw new NullPointerException("null lock type");
         }
-        // TODO(proj4_part1): implement
 
-        return false;
+
+        HashMap<Set<LockType>, Boolean> list = new HashMap<>();
+
+        list.put(new HashSet<>(Arrays.asList(NL, NL)), true);
+
+        list.put(new HashSet<>(Arrays.asList(IS, IS)), true);
+        list.put(new HashSet<>(Arrays.asList(IS, IX)), true);
+        list.put(new HashSet<>(Arrays.asList(IS, S)), true);
+        list.put(new HashSet<>(Arrays.asList(IS, SIX)), true);
+        list.put(new HashSet<>(Arrays.asList(IS, X)), false);
+        list.put(new HashSet<>(Arrays.asList(IS, NL)), true);
+
+
+        list.put(new HashSet<>(Arrays.asList(IX, IS)), true);
+        list.put(new HashSet<>(Arrays.asList(IX, IX)), true);
+        list.put(new HashSet<>(Arrays.asList(IX, S)), false);
+        list.put(new HashSet<>(Arrays.asList(IX, SIX)), false);
+        list.put(new HashSet<>(Arrays.asList(IX, X)), false);
+        list.put(new HashSet<>(Arrays.asList(IX, NL)), true);
+
+        list.put(new HashSet<>(Arrays.asList(S, IS)), true);
+        list.put(new HashSet<>(Arrays.asList(S, IX)), false);
+        list.put(new HashSet<>(Arrays.asList(S, S)), true);
+        list.put(new HashSet<>(Arrays.asList(S, SIX)), false);
+        list.put(new HashSet<>(Arrays.asList(S, X)), false);
+        list.put(new HashSet<>(Arrays.asList(S, NL)), true);
+
+        list.put(new HashSet<>(Arrays.asList(SIX, IS)), true);
+        list.put(new HashSet<>(Arrays.asList(SIX, IX)), false);
+        list.put(new HashSet<>(Arrays.asList(SIX, S)), false);
+        list.put(new HashSet<>(Arrays.asList(SIX, SIX)), false);
+        list.put(new HashSet<>(Arrays.asList(SIX, X)), false);
+        list.put(new HashSet<>(Arrays.asList(SIX, NL)), true);
+
+        list.put(new HashSet<>(Arrays.asList(X, IS)), false);
+        list.put(new HashSet<>(Arrays.asList(X, IX)), false);
+        list.put(new HashSet<>(Arrays.asList(X, S)), false);
+        list.put(new HashSet<>(Arrays.asList(X, SIX)), false);
+        list.put(new HashSet<>(Arrays.asList(X, X)), false);
+        list.put(new HashSet<>(Arrays.asList(X, NL)), true);
+
+        HashSet ab = new HashSet<>(Arrays.asList(a,b));
+        boolean ret = list.get(ab);
+        return ret;
+
+        // TODO(proj4_part1): implement
     }
 
     /**
@@ -53,9 +102,38 @@ public enum LockType {
         if (parentLockType == null || childLockType == null) {
             throw new NullPointerException("null lock type");
         }
-        // TODO(proj4_part1): implement
 
-        return false;
+        if (childLockType.equals(NL)) {
+            return true;
+        } else if (parentLockType.equals(NL) || parentLockType.equals(S) || parentLockType.equals(X)) {
+            return false;
+        } else if (parentLockType.equals(IX)) {
+            return true;
+        }
+
+        HashMap<List<LockType>, Boolean> list = new HashMap<>();
+
+        list.put(new ArrayList<>(Arrays.asList(IS, IS)), true);
+        list.put(new ArrayList<>(Arrays.asList(IS, IX)), false);
+        list.put(new ArrayList<>(Arrays.asList(IS, S)), true);
+        list.put(new ArrayList<>(Arrays.asList(IS, SIX)), false);
+        list.put(new ArrayList<>(Arrays.asList(IS, X)), false);
+        list.put(new ArrayList<>(Arrays.asList(IS, NL)), true);
+
+
+        list.put(new ArrayList<>(Arrays.asList(SIX, IS)), false);
+        list.put(new ArrayList<>(Arrays.asList(SIX, IX)), true);
+        list.put(new ArrayList<>(Arrays.asList(SIX, S)), false);
+        list.put(new ArrayList<>(Arrays.asList(SIX, SIX)), false);
+        list.put(new ArrayList<>(Arrays.asList(SIX, X)), true);
+        list.put(new ArrayList<>(Arrays.asList(IX, NL)), true);
+
+
+        List new_list = new ArrayList<>(Arrays.asList(parentLockType, childLockType));
+        boolean ret = list.get(new_list);
+        return ret;
+
+        // TODO(proj4_part1): implement
     }
 
     /**
