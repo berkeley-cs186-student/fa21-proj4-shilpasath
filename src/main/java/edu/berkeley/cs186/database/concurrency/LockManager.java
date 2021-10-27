@@ -101,7 +101,9 @@ public class LockManager {
          */
         public void releaseLock(Lock lock) {
             // TODO(proj4_part1):
-            getLocks(lock.name).remove(lock);
+//            getLocks(lock.name).remove(lock);
+            resourceEntries.get(lock.name).locks.remove(lock);
+            List<Lock> tlocks = transactionLocks.get(lock.transactionNum);
             transactionLocks.get(lock.transactionNum).remove(lock);
             getResourceEntry(lock.name).processQueue();
         }
@@ -278,7 +280,20 @@ public class LockManager {
         // TODO(proj4_part1): implement
         // You may modify any part of this method.
         synchronized (this) {
-            
+            ResourceEntry r = getResourceEntry(name);
+            boolean seen = false;
+            Lock lock = null;
+            for (Lock l : r.locks) {
+                if (l.transactionNum == transaction.getTransNum()) {
+                    seen = true;
+                    lock = l;
+                }
+            }
+            if (!seen) {
+                throw new NoLockHeldException("no lock on resource held by transaction thrown by release");
+            }
+
+            r.releaseLock(lock);
         }
     }
 
