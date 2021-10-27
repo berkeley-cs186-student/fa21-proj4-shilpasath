@@ -101,9 +101,7 @@ public class LockManager {
          */
         public void releaseLock(Lock lock) {
             // TODO(proj4_part1):
-//            getLocks(lock.name).remove(lock);
             resourceEntries.get(lock.name).locks.remove(lock);
-//            transactionLocks.get(lock.transactionNum).remove(lock);
             ArrayList tLocks = new ArrayList(transactionLocks.get(lock.transactionNum));
             tLocks.remove(lock);
             transactionLocks.put(lock.transactionNum, tLocks);
@@ -327,7 +325,28 @@ public class LockManager {
         // You may modify any part of this method.
         boolean shouldBlock = false;
         synchronized (this) {
-            
+            LockType currLock = getLockType(transaction, name);
+            if (currLock == newLockType) {
+                throw new DuplicateLockRequestException("`transaction` already has a `newLockType` lock on `name` from promote");
+            }
+            if (currLock == LockType.NL) {
+                throw new NoLockHeldException("`transaction` has no lock on `name` from ur mom in promote");
+            }
+            if (!LockType.substitutable(newLockType, currLock)) {
+                throw new InvalidLockException("ur mom from promote");
+            }
+
+            ResourceEntry r = getResourceEntry(name);
+            Lock newL = new Lock(name, newLockType, transaction.getTransNum());
+            if (r.checkCompatible(newLockType, transaction.getTransNum())) {
+                r.grantOrUpdateLock(newL);
+            } else {
+                shouldBlock = true;
+                transaction.prepareBlock();
+                LockRequest req = new LockRequest(transaction, newL);
+                r.addToQueue(req, true);
+            }
+
         }
         if (shouldBlock) {
             transaction.block();
