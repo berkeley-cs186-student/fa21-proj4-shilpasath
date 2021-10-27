@@ -103,9 +103,10 @@ public class LockManager {
             // TODO(proj4_part1):
 //            getLocks(lock.name).remove(lock);
             resourceEntries.get(lock.name).locks.remove(lock);
-//            List<Lock> tlocks = transactionLocks.get(lock.transactionNum);
 //            transactionLocks.get(lock.transactionNum).remove(lock);
-            transactionLocks.put(lock.transactionNum, new ArrayList<Lock>());
+            ArrayList tLocks = new ArrayList(transactionLocks.get(lock.transactionNum));
+            tLocks.remove(lock);
+            transactionLocks.put(lock.transactionNum, tLocks);
             getResourceEntry(lock.name).processQueue();
         }
 
