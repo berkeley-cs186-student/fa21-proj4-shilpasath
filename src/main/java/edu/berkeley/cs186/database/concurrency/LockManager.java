@@ -130,7 +130,7 @@ public class LockManager {
             Iterator<LockRequest> requests = waitingQueue.iterator();
             while (requests.hasNext()) {
                 LockRequest currLockReq = requests.next();
-                if (!checkCompatible(currLockReq.lock.lockType, (Long)null)) {
+                if (!checkCompatible(currLockReq.lock.lockType, currLockReq.lock.transactionNum)) {
                     break;
                 }
                 grantOrUpdateLock(currLockReq.lock);
