@@ -273,7 +273,7 @@ public class LockManager {
      * requests in the queue have locks to be released, those should be
      * released, and the corresponding queues also processed.
      *
-     * @throws NoLockHeldException if no lock on `name` is held by `transaction`
+     * @throws NoLockHeldException if noaa lock on `name` is held by `transaction`
      */
     public void release(TransactionContext transaction, ResourceName name)
             throws NoLockHeldException {
