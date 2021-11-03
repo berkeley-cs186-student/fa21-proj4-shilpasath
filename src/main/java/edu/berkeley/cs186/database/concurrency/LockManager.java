@@ -81,18 +81,21 @@ public class LockManager {
                     Lock l = resLocks.get(i);
                     if (l.transactionNum == trans) {
                         resLocks.remove(i);
-                        resLocks.add(i, lock);
+//                        resLocks.add(i, lock);
                     }
                 }
-                resourceEntries.get(lock.name).locks = resLocks;
+//                resourceEntries.get(lock.name).locks = resLocks;
             }
 
             if (transactionLocks.get(trans) == null) {
-                resourceEntries.get(lock.name).locks.add(lock);
+//                resourceEntries.get(lock.name).locks.add(lock);
                 transactionLocks.put(trans, Arrays.asList(lock));
             } else {
-                transactionLocks.get(trans).add(lock);
+                ArrayList<Lock> transLocks = new ArrayList(transactionLocks.get(trans));
+                transLocks.add(lock);
+                transactionLocks.put(trans, transLocks);
             }
+            resourceEntries.get(lock.name).locks.add(lock);
         }
 
         /**
