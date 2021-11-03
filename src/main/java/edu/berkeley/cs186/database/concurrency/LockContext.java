@@ -97,6 +97,17 @@ public class LockContext {
             throws InvalidLockException, DuplicateLockRequestException {
         // TODO(proj4_part2): implement
 
+        if (this.readonly) {
+            throw new UnsupportedOperationException("context is read only");
+        }
+
+        //To get S or IS lock on a node, must hold IS or IX on parent node.
+        //3. To get X or IX on a node, must hold IX or SIX on parent node.
+
+        LockContext parent = parentContext();
+
+
+
         return;
     }
 
