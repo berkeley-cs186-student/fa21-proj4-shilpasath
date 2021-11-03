@@ -97,7 +97,36 @@ public class LockContext {
             throws InvalidLockException, DuplicateLockRequestException {
         // TODO(proj4_part2): implement
 
-        return;
+        if (this.readonly) {
+            throw new UnsupportedOperationException("context is read only");
+        }
+
+        //To get S or IS lock on a node, must hold IS or IX on parent node.
+        //3. To get X or IX on a node, must hold IX or SIX on parent node.
+        LockContext parent = parentContext();
+        if (parent != null) {
+            LockType parentLockType = parent.getEffectiveLockType(transaction);
+
+            if (lockType == LockType.S || lockType == LockType.IS) {
+                if (parentLockType != LockType.IS && parentLockType != LockType.IX) {
+                    throw new InvalidLockException("request invalid; lock S/IS, parent not IS/IX");
+                }
+            } else if (lockType == LockType.X || lockType == LockType.IX) {
+                if (parentLockType != LockType.IX && parentLockType != LockType.SIX) {
+                    throw new InvalidLockException("request invalid; lock X/IX, parent not IX/SIX");
+                }
+            }
+        }
+            //transaction currently already holds a lock of any type on the resource --> duplicate
+        if (lockman.getLockType(transaction, name) != LockType.NL) {
+            throw new DuplicateLockRequestException("transaction already holds lock on resource");
+        }
+        lockman.acquire(transaction, name, lockType);
+        if (parent != null) {
+            parent.numChildLocks.put(transaction.getTransNum(), parent.getNumChildren(transaction) + 1);
+        }
+
+
     }
 
     /**
@@ -188,9 +217,11 @@ public class LockContext {
      * lock is held at this level.
      */
     public LockType getExplicitLockType(TransactionContext transaction) {
-        if (transaction == null) return LockType.NL;
+        if (transaction == null) {
+            return LockType.NL;
+        }
         // TODO(proj4_part2): implement
-        return LockType.NL;
+        return lockman.getLockType(transaction, this.name);
     }
 
     /**
@@ -202,7 +233,18 @@ public class LockContext {
     public LockType getEffectiveLockType(TransactionContext transaction) {
         if (transaction == null) return LockType.NL;
         // TODO(proj4_part2): implement
-        return LockType.NL;
+
+        LockType locktype = getExplicitLockType(transaction);
+        if (locktype == LockType.NL) {
+            LockContext parent = this.parentContext();
+            if (parent == null) {
+                return LockType.NL;
+            }
+            return parent.getEffectiveLockType(transaction);
+        } else {
+            return locktype;
+        }
+
     }
 
     /**
