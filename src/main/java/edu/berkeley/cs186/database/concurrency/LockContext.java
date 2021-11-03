@@ -105,6 +105,7 @@ public class LockContext {
         //3. To get X or IX on a node, must hold IX or SIX on parent node.
         LockContext parent = parentContext();
         if (parent != null) {
+            //check effective
             LockType parentLockType = parent.getEffectiveLockType(transaction);
 
             if (lockType == LockType.S || lockType == LockType.IS) {
@@ -255,7 +256,15 @@ public class LockContext {
      */
     private boolean hasSIXAncestor(TransactionContext transaction) {
         // TODO(proj4_part2): implement
-        return false;
+        //check effective
+        if (parent == null && getEffectiveLockType(transaction) != LockType.SIX) {
+            return false;
+        }
+        //check effective
+        if (getEffectiveLockType(transaction) == LockType.SIX) {
+            return true;
+        }
+        return parent.hasSIXAncestor(transaction);
     }
 
     /**
@@ -267,7 +276,9 @@ public class LockContext {
      */
     private List<ResourceName> sisDescendants(TransactionContext transaction) {
         // TODO(proj4_part2): implement
-        return new ArrayList<>();
+        ArrayList descendants = new ArrayList<>();
+
+        return descendants;
     }
 
     /**
