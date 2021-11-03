@@ -240,7 +240,12 @@ public class LockContext {
             if (parent == null) {
                 return LockType.NL;
             }
-            return parent.getEffectiveLockType(transaction);
+            LockType pELT =  parent.getEffectiveLockType(transaction);
+            if (pELT.isIntent()) {
+                return LockType.NL;
+            } else {
+                return pELT;
+            }
         } else {
             return locktype;
         }
