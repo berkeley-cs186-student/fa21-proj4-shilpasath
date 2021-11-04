@@ -2,6 +2,7 @@ package edu.berkeley.cs186.database.concurrency;
 
 import edu.berkeley.cs186.database.TransactionContext;
 
+import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -242,6 +243,30 @@ public class LockContext {
      */
     public void escalate(TransactionContext transaction) throws NoLockHeldException {
         // TODO(proj4_part2): implement
+        if (this.readonly) {
+            throw new UnsupportedOperationException("context is read only");
+        }
+        if (getExplicitLockType(transaction) == LockType.NL) {
+            throw new NoLockHeldException("no lock held by transaction");
+        }
+
+        ArrayList<ResourceName> toRelease = new ArrayList<>();
+        for (Lock l : lockman.getLocks(transaction)) {
+            if (l.name.isDescendantOf(name)) {
+                toRelease.add(l.name);
+            }
+        }
+
+        LockType currLockType = getExplicitLockType(transaction);
+        LockType newLockType = LockType.NL; // UPGRADE TO NL as default
+        if (currLockType == LockType.IS) { // GUESS
+            newLockType = LockType.S;
+        } else if (currLockType == LockType.IX) {
+            newLockType = LockType.X;
+        }
+
+        lockman.release(transaction, name); // also guess
+        lockman.acquireAndRelease(transaction, name, newLockType, toRelease); // promote instead?
 
         return;
     }
