@@ -326,6 +326,34 @@ public class TestLockContext {
 
     @Test
     @Category(PublicTests.class)
+    public void testEscalateX() {
+        TransactionContext t1 = transactions[1];
+
+        LockContext r0 = dbLockContext;
+        LockContext r1 = tableLockContext;
+        LockContext r2 = tableLockContext.childContext("page1");
+        LockContext r3 = tableLockContext.childContext("page2");
+        LockContext r4 = tableLockContext.childContext("page3");
+
+        r0.acquire(t1, LockType.IS);
+        r1.acquire(t1, LockType.IS);
+        r2.acquire(t1, LockType.S);
+        r3.acquire(t1, LockType.S);
+        r4.acquire(t1, LockType.S);
+
+        assertEquals(1, r0.getNumChildren(t1));
+        r0.escalate(t1);
+        assertEquals(0, r0.getNumChildren(t1));
+
+        assertTrue(TestLockManager.holds(lockManager, t1, r0.getResourceName(), LockType.S));
+        assertFalse(TestLockManager.holds(lockManager, t1, r1.getResourceName(), LockType.S));
+        assertFalse(TestLockManager.holds(lockManager, t1, r2.getResourceName(), LockType.IS));
+        assertFalse(TestLockManager.holds(lockManager, t1, r3.getResourceName(), LockType.S));
+        assertFalse(TestLockManager.holds(lockManager, t1, r3.getResourceName(), LockType.S));
+    }
+
+    @Test
+    @Category(PublicTests.class)
     public void testGetLockType() {
         DeterministicRunner runner = new DeterministicRunner(4);
 
