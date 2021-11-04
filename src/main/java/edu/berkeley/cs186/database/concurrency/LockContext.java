@@ -198,26 +198,13 @@ public class LockContext {
             throw new InvalidLockException("invalid lock type in promote");
         }
         Long transNum = transaction.getTransNum();
+        ArrayList<ResourceName> sisies = new ArrayList<ResourceName>(sisDescendants(transaction));
         if (newLockType == LockType.SIX) {
-            lockman.acquireAndRelease(transaction, name, newLockType, sisDescendants(transaction));
-            numChildLocks.put(transNum, 0);
-            parent.numChildLocks.put(transNum, 0);
+            lockman.acquireAndRelease(transaction, name, newLockType, sisies);
+            numChildLocks.put(transNum, numChildLocks.get(transNum) - sisies.size());
         } else {
             lockman.promote(transaction, this.name, newLockType);
         }
-
-        if (parent != null) {
-            //update numChildLocks
-            if (!parent.numChildLocks.containsKey(transNum)) {
-                parent.numChildLocks.put(transNum, 0);
-            }
-            parent.numChildLocks.put(transaction.getTransNum(), parent.getNumChildren(transaction) + 1);
-        }
-
-
-
-
-        return;
     }
 
     /**
