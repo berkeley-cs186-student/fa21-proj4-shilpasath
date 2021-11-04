@@ -251,7 +251,7 @@ public class LockContext {
         }
 
         LockType currLockType = getExplicitLockType(transaction);
-        LockType newLockType = LockType.NL; // UPGRADE TO NL as default
+        LockType newLockType;
         if (currLockType == LockType.IS) {
             newLockType = LockType.S;
         } else if (currLockType == LockType.IX || currLockType == LockType.SIX) { // GUESS
