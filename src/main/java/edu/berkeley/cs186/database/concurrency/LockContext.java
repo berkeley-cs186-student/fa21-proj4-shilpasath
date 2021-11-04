@@ -140,10 +140,13 @@ public class LockContext {
         if (this.readonly) {
             throw new UnsupportedOperationException("context is read only");
         }
+        if (lockman.getLockType(transaction, this.name) == LockType.NL) {
+            throw new NoLockHeldException("no lock on name is held by transaction");
+        }
 
         //checks for invalid release requests; child has keys with locks; child has transaction
         Long transNum = transaction.getTransNum();
-        if (this.numChildLocks.get(transNum) != 0 || numChildLocks.containsKey(transNum)) {
+        if (this.getNumChildren(transaction) != 0 || numChildLocks.containsKey(transNum)) {
             throw new InvalidLockException("lock cannot be released (violates multigran constraints");
         }
 
