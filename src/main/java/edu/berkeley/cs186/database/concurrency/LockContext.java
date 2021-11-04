@@ -266,13 +266,15 @@ public class LockContext {
                 toRelease.add(l.name);
             }
         }
+        toRelease.add(this.name);
 
-        lockman.release(transaction, name); // also guess
+//        lockman.release(transaction, name); // also guess
         lockman.acquireAndRelease(transaction, name, newLockType, toRelease); // promote instead?
-        if (numChildLocks.containsKey(transaction.getTransNum())) {
-            int currChildLocks = numChildLocks.get(transaction.getTransNum());
-            numChildLocks.put(transaction.getTransNum(), currChildLocks - toRelease.size());
-        }
+        numChildLocks.put(transaction.getTransNum(), 0);
+//        if (numChildLocks.containsKey(transaction.getTransNum())) {
+//            int currChildLocks = numChildLocks.get(transaction.getTransNum());
+//            numChildLocks.put(transaction.getTransNum(), currChildLocks - toRelease.size());
+//        }
     }
 
     /**

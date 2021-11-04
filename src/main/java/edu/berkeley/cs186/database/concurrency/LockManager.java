@@ -208,8 +208,8 @@ public class LockManager {
         // all your code within the given synchronized block and are allowed to
         // move the synchronized block elsewhere if you wish.
         boolean shouldBlock = false;
+//        acquire(transaction, name, lockType);
         synchronized (this) {
-            acquire(transaction, name, lockType);
             if (transaction.getBlocked()) {
                 try {
                     promote(transaction, name, lockType);
@@ -220,10 +220,27 @@ public class LockManager {
                 transaction.unblock();
                 return;
             }
-            for (ResourceName r : releaseNames) {
-                release(transaction, r);
+            ResourceEntry r = getResourceEntry(name);
+            boolean isCompatible = r.checkCompatible(lockType, transaction.getTransNum());
+            boolean hasQueue = !r.waitingQueue.isEmpty();
+            Lock newL = new Lock(name, lockType, transaction.getTransNum());
+            if (!isCompatible || hasQueue) {
+                shouldBlock = true;
+                transaction.prepareBlock();
+                LockRequest newLReq = new LockRequest(transaction, newL);
+                r.addToQueue(newLReq, false);
+            } else {
+                for (ResourceName rname : releaseNames) {
+                    release(transaction, rname);
+                }
+                if (getLockType(transaction, name) != LockType.NL) {
+                    throw new DuplicateLockRequestException("dupl lock request in acquire");
+                }
+                r.grantOrUpdateLock(newL);
+
             }
         }
+
         if (shouldBlock) {
             transaction.block();
         }
