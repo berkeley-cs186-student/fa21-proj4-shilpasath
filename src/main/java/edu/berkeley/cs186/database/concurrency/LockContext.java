@@ -250,6 +250,16 @@ public class LockContext {
             throw new NoLockHeldException("no lock held by transaction");
         }
 
+        LockType currLockType = getExplicitLockType(transaction);
+        LockType newLockType = LockType.NL; // UPGRADE TO NL as default
+        if (currLockType == LockType.IS) {
+            newLockType = LockType.S;
+        } else if (currLockType == LockType.IX || currLockType == LockType.SIX) { // GUESS
+            newLockType = LockType.X;
+        } else { // if (currLockType == LockType.S || currLockType == LockType.X)
+            return;
+        }
+
         ArrayList<ResourceName> toRelease = new ArrayList<>();
         for (Lock l : lockman.getLocks(transaction)) {
             if (l.name.isDescendantOf(name)) {
@@ -257,18 +267,12 @@ public class LockContext {
             }
         }
 
-        LockType currLockType = getExplicitLockType(transaction);
-        LockType newLockType = LockType.NL; // UPGRADE TO NL as default
-        if (currLockType == LockType.IS) { // GUESS
-            newLockType = LockType.S;
-        } else if (currLockType == LockType.IX) {
-            newLockType = LockType.X;
-        }
-
         lockman.release(transaction, name); // also guess
         lockman.acquireAndRelease(transaction, name, newLockType, toRelease); // promote instead?
-
-        return;
+        if (numChildLocks.containsKey(transaction.getTransNum())) {
+            int currChildLocks = numChildLocks.get(transaction.getTransNum());
+            numChildLocks.put(transaction.getTransNum(), currChildLocks - toRelease.size());
+        }
     }
 
     /**
