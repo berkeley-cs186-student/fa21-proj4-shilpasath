@@ -77,11 +77,13 @@ public class LockManager {
             long trans = lock.transactionNum;
             List<Lock> resLocks = resourceEntries.get(lock.name).locks;
             List<Lock> tLocks = transactionLocks.get(trans);
+            Lock replace = null;
             if (tLocks != null && !tLocks.isEmpty()) {
                 for (int i = 0; i < resLocks.size(); i++) { // unsure if we should be iterating through reslocks or transactionlocks.get(trans) or this.locks
                     Lock l = resLocks.get(i);
                     if (l.transactionNum == trans) {
                         resLocks.remove(i);
+                        replace = l;
 //                        resLocks.add(i, lock);
                     }
                 }
@@ -93,6 +95,7 @@ public class LockManager {
                 transactionLocks.put(trans, Arrays.asList(lock));
             } else {
                 ArrayList<Lock> transLocks = new ArrayList(transactionLocks.get(trans));
+                transLocks.remove(replace);
                 transLocks.add(lock);
                 transactionLocks.put(trans, transLocks);
             }

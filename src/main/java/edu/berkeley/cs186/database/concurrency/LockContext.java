@@ -200,6 +200,7 @@ public class LockContext {
         }
         Long transNum = transaction.getTransNum();
         ArrayList<ResourceName> sisies = new ArrayList<ResourceName>(sisDescendants(transaction));
+        sisies.add(name);
         if (newLockType == LockType.SIX) {
             lockman.acquireAndRelease(transaction, name, newLockType, sisies);
             numChildLocks.put(transNum, numChildLocks.get(transNum) - sisies.size());
