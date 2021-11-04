@@ -140,7 +140,7 @@ public class LockContext {
         if (this.readonly) {
             throw new UnsupportedOperationException("context is read only");
         }
-        if (lockman.getLockType(transaction, this.name) == LockType.NL) {
+        if (getExplicitLockType(transaction) == LockType.NL) {
             throw new NoLockHeldException("no lock on name is held by transaction");
         }
 
@@ -182,6 +182,40 @@ public class LockContext {
     public void promote(TransactionContext transaction, LockType newLockType)
             throws DuplicateLockRequestException, NoLockHeldException, InvalidLockException {
         // TODO(proj4_part2): implement
+        if (this.readonly) {
+            throw new UnsupportedOperationException("context is read only");
+        }
+        if (getExplicitLockType(transaction) == LockType.NL) {
+            throw new NoLockHeldException("no lock held by transaction");
+        }
+        LockType currLock = getExplicitLockType(transaction);
+        if (currLock == newLockType) {
+            throw new DuplicateLockRequestException("transaction has newLockType lock");
+        }
+
+        //valid if B is substitutable for A && B != A
+        if (!LockType.substitutable(newLockType, currLock) || hasSIXAncestor(transaction)) {
+            throw new InvalidLockException("invalid lock type in promote");
+        }
+        Long transNum = transaction.getTransNum();
+        if (newLockType == LockType.SIX) {
+            lockman.acquireAndRelease(transaction, name, newLockType, sisDescendants(transaction));
+            numChildLocks.put(transNum, 0);
+            parent.numChildLocks.put(transNum, 0);
+        } else {
+            lockman.promote(transaction, this.name, newLockType);
+        }
+
+        if (parent != null) {
+            //update numChildLocks
+            if (!parent.numChildLocks.containsKey(transNum)) {
+                parent.numChildLocks.put(transNum, 0);
+            }
+            parent.numChildLocks.put(transaction.getTransNum(), parent.getNumChildren(transaction) + 1);
+        }
+
+
+
 
         return;
     }
