@@ -207,8 +207,8 @@ public class LockManager {
         // all your code within the given synchronized block and are allowed to
         // move the synchronized block elsewhere if you wish.
         boolean shouldBlock = false;
+        acquire(transaction, name, lockType);
         synchronized (this) {
-            acquire(transaction, name, lockType);
             if (transaction.getBlocked()) {
                 try {
                     promote(transaction, name, lockType);
@@ -223,6 +223,7 @@ public class LockManager {
                 release(transaction, r);
             }
         }
+
         if (shouldBlock) {
             transaction.block();
         }
