@@ -76,7 +76,8 @@ public class LockManager {
             // TODO(proj4_part1): implement
             long trans = lock.transactionNum;
             List<Lock> resLocks = resourceEntries.get(lock.name).locks;
-            if (transactionLocks.get(trans) != null && !transactionLocks.get(trans).isEmpty()) {
+            List<Lock> tLocks = transactionLocks.get(trans);
+            if (tLocks != null && !tLocks.isEmpty()) {
                 for (int i = 0; i < resLocks.size(); i++) { // unsure if we should be iterating through reslocks or transactionlocks.get(trans) or this.locks
                     Lock l = resLocks.get(i);
                     if (l.transactionNum == trans) {
