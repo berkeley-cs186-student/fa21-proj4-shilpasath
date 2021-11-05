@@ -2,6 +2,7 @@ package edu.berkeley.cs186.database.concurrency;
 
 import edu.berkeley.cs186.database.TransactionContext;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -47,76 +48,44 @@ public class LockUtil {
         if (requestType == LockType.NL || requestType.equals(explicitLockType)) {
             return;
         }
-//        else if (lockContext.parent != null) {
-//            promoteParent(lockContext, transaction, wantedParentType);
-//        }
-        //     * - The current lock type can effectively substitute the requested type
+
+        // parents
+        if (!(explicitLockType == LockType.IX && requestType == LockType.S) && !LockType.canBeParentLock(parentContext.getExplicitLockType(transaction), requestType)) {
+            promoteParents(lockContext, transaction, wantedParentType);
+        }
+        // kids
+        boolean releaseChildren = false;
+
         if (explicitLockType == LockType.NL) {
-            promoteParent(lockContext, transaction, wantedParentType);
             lockContext.acquire(transaction, requestType);
+            releaseChildren = true;
         } else if (LockType.substitutable(requestType, explicitLockType)) {
-            promoteParent(lockContext, transaction, wantedParentType);
             lockContext.promote(transaction, requestType);
+            releaseChildren = true;
         } else if ((explicitLockType == LockType.IS && requestType == LockType.S)
                 || (explicitLockType == LockType.IX && requestType == LockType.X)
                 || (explicitLockType == LockType.SIX && requestType == LockType.X)) {
-            promoteParent(lockContext, transaction, wantedParentType);
             lockContext.escalate(transaction);
         } else if (explicitLockType == LockType.SIX && requestType == LockType.S) {
             return;
-        } else if (explicitLockType == LockType.IX && requestType == LockType.S){
-                lockContext.release(transaction);
-                lockContext.acquire(transaction, LockType.SIX);
+        } else if (explicitLockType == LockType.IX && requestType == LockType.S){ // this is wrong
+//            lockContext.release(transaction);
+//            lockContext.acquire(transaction, LockType.SIX);
+            lockContext.promote(transaction, LockType.SIX);
         } else {
-            promoteParent(lockContext, transaction, wantedParentType);
             lockContext.release(transaction);
             lockContext.acquire(transaction, requestType);
+//            lockContext.lockman.acquireAndRelease(transaction, lockContext.name, requestType, new ArrayList<>(Arrays.asList(lockContext.name)));
+            releaseChildren = true;
         }
 
-        for (Lock l : lockContext.lockman.getLocks(transaction)) {
-            if (l.name.isDescendantOf(lockContext.name)) {
-                lockContext.fromResourceName(lockContext.lockman, l.name).release(transaction);
+        if (releaseChildren) {
+            for (Lock l : lockContext.lockman.getLocks(transaction)) {
+                if (l.name.isDescendantOf(lockContext.name)) {
+                    lockContext.fromResourceName(lockContext.lockman, l.name).release(transaction);
+                }
             }
         }
-
-            //     * - The current lock type is IX and the requested lock is S
-            //     * - The current lock type is an intent lock
-
-
-
-
-
-
-
-
-        //TASK1: ensure that we have the appropriate locks on ancestors
-        ArrayList<LockContext> ancestors = findAncestors(lockContext);
-
-        //im thinking we do all these checks to compare the wanted parent type to each ancestor,
-        //then do the same for current type and requestType
-
-
-
-        for (LockContext ancestor : ancestors) {
-            //promote when:
-            //parent needs to be SIX, and ancestor is IS/S/ IX -- unsure ab IX
-            //
-
-            //escalate parent when ancestor is IS or IX
-
-            //if they fail, acquire
-
-        }
-
-        //escalate when we have child locks that would become redundant
-        // if we were to acquire a lock of requestType (S or X) without releasing the children
-
-
-
-
-
-        // acquiring the lock on the resource
-        return;
     }
 
     // TODO(proj4_part2) add any helper methods you want
@@ -132,19 +101,26 @@ public class LockUtil {
         return ancestors;
     }
 
-
-    public static void promoteParent(LockContext lockContext, TransactionContext transaction, LockType wantedParentType) {
-        if (lockContext.parent == null) {
+    public static void promoteParents(LockContext lockContext, TransactionContext transaction, LockType wantedParentType) {
+        if (lockContext == null) {
             return;
         }
-        ArrayList<LockContext> ancestors = findAncestors(lockContext);
-        for (LockContext a : ancestors) {
-            if (a.getExplicitLockType(transaction) == wantedParentType) {
-                continue;
-            } else if (a.getExplicitLockType(transaction) != LockType.NL) {
-                a.promote(transaction, wantedParentType);
-            } else {
-                a.acquire(transaction, wantedParentType);
+
+        LockContext parent = lockContext.parentContext();
+        if (parent == null || parent.getExplicitLockType(transaction) == wantedParentType) {
+            return;
+        }
+        promoteParents(lockContext.parentContext(), transaction, LockType.parentLock(wantedParentType));
+
+        if (parent.getExplicitLockType(transaction) == LockType.NL) {
+            parent.acquire(transaction, wantedParentType);
+        } else {
+            try {
+                parent.promote(transaction, wantedParentType);
+            } catch (DuplicateLockRequestException | NoLockHeldException e) {
+                System.out.println(e);
+                parent.release(transaction);
+                parent.acquire(transaction, wantedParentType);
             }
         }
     }
