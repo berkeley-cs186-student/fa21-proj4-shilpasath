@@ -1,6 +1,9 @@
 package edu.berkeley.cs186.database.concurrency;
 
 import edu.berkeley.cs186.database.TransactionContext;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 /**
  * LockUtil is a declarative layer which simplifies multigranularity lock
@@ -40,10 +43,85 @@ public class LockUtil {
         LockContext parentContext = lockContext.parentContext();
         LockType effectiveLockType = lockContext.getEffectiveLockType(transaction);
         LockType explicitLockType = lockContext.getExplicitLockType(transaction);
-
         // TODO(proj4_part2): implement
-        return;
+        LockType wantedParentType = LockType.parentLock(requestType);
+        if (requestType == LockType.NL || requestType.equals(explicitLockType)) {
+            return;
+        }
+
+        // parents
+        if (!(explicitLockType == LockType.IX && requestType == LockType.S) && !LockType.canBeParentLock(parentContext.getExplicitLockType(transaction), requestType)) {
+            promoteParents(lockContext, transaction, wantedParentType);
+        }
+        // kids
+        boolean releaseChildren = false;
+
+        if (explicitLockType == LockType.NL) {
+            lockContext.acquire(transaction, requestType);
+            releaseChildren = true;
+        } else if (LockType.substitutable(requestType, explicitLockType)) {
+            lockContext.promote(transaction, requestType);
+            releaseChildren = true;
+        } else if ((explicitLockType == LockType.IS && requestType == LockType.S)
+                || (explicitLockType == LockType.IX && requestType == LockType.X)
+                || (explicitLockType == LockType.SIX && requestType == LockType.X)) {
+            lockContext.escalate(transaction);
+        } else if (explicitLockType == LockType.SIX && requestType == LockType.S) {
+            return;
+        } else if (explicitLockType == LockType.IX && requestType == LockType.S){ // this is wrong
+//            lockContext.release(transaction);
+//            lockContext.acquire(transaction, LockType.SIX);
+            lockContext.promote(transaction, LockType.SIX);
+        } else {
+            lockContext.release(transaction);
+            lockContext.acquire(transaction, requestType);
+//            lockContext.lockman.acquireAndRelease(transaction, lockContext.name, requestType, new ArrayList<>(Arrays.asList(lockContext.name)));
+            releaseChildren = true;
+        }
+
+        if (releaseChildren) {
+            for (Lock l : lockContext.lockman.getLocks(transaction)) {
+                if (l.name.isDescendantOf(lockContext.name)) {
+                    lockContext.fromResourceName(lockContext.lockman, l.name).release(transaction);
+                }
+            }
+        }
     }
 
     // TODO(proj4_part2) add any helper methods you want
+    public static ArrayList<LockContext> findAncestors(LockContext lockContext) {
+        ArrayList<LockContext> ancestors = new ArrayList<>();
+        LockContext parent = lockContext.parentContext();
+
+        while (parent != null) {
+            //add at index 0 because you want the highest ancestor first
+            ancestors.add(0 ,parent);
+            parent = parent.parentContext();
+        }
+        return ancestors;
+    }
+
+    public static void promoteParents(LockContext lockContext, TransactionContext transaction, LockType wantedParentType) {
+        if (lockContext == null) {
+            return;
+        }
+
+        LockContext parent = lockContext.parentContext();
+        if (parent == null || parent.getExplicitLockType(transaction) == wantedParentType) {
+            return;
+        }
+        promoteParents(lockContext.parentContext(), transaction, LockType.parentLock(wantedParentType));
+
+        if (parent.getExplicitLockType(transaction) == LockType.NL) {
+            parent.acquire(transaction, wantedParentType);
+        } else {
+            try {
+                parent.promote(transaction, wantedParentType);
+            } catch (DuplicateLockRequestException | NoLockHeldException e) {
+                System.out.println(e);
+                parent.release(transaction);
+                parent.acquire(transaction, wantedParentType);
+            }
+        }
+    }
 }

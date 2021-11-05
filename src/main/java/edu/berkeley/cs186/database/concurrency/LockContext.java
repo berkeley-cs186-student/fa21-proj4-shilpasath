@@ -195,9 +195,11 @@ public class LockContext {
         }
 
         //valid if B is substitutable for A && B != A
-        if (!LockType.substitutable(newLockType, currLock) || hasSIXAncestor(transaction)) {
+        boolean isValidSIX = newLockType == LockType.SIX && (currLock == LockType.IS || currLock == LockType.IX || currLock == LockType.S) && !hasSIXAncestor(transaction);
+        if (!LockType.substitutable(newLockType, currLock) && !isValidSIX) {
             throw new InvalidLockException("invalid lock type in promote");
         }
+
         Long transNum = transaction.getTransNum();
         ArrayList<ResourceName> sisies = new ArrayList<ResourceName>(sisDescendants(transaction));
         sisies.add(name);
@@ -326,7 +328,7 @@ public class LockContext {
             return false;
         }
         //check effective
-        if (getEffectiveLockType(transaction) == LockType.SIX) {
+        if (parent.getEffectiveLockType(transaction) == LockType.SIX) {
             return true;
         }
         return parent.hasSIXAncestor(transaction);
