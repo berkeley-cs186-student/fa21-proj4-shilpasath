@@ -50,7 +50,8 @@ public class LockUtil {
         }
 
         // parents
-        if (!(explicitLockType == LockType.IX && requestType == LockType.S) && !LockType.canBeParentLock(parentContext.getExplicitLockType(transaction), requestType)) {
+        if (parentContext != null && !(explicitLockType == LockType.IX
+                && requestType == LockType.S) && !LockType.canBeParentLock(parentContext.getExplicitLockType(transaction), requestType)) {
             promoteParents(lockContext, transaction, wantedParentType);
         }
         // kids
