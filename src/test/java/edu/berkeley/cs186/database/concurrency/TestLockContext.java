@@ -228,6 +228,31 @@ public class TestLockContext {
         assertTrue(TestLockManager.holds(lockManager, t1, dbLockContext.getResourceName(), LockType.X));
     }
 
+//    @Test
+//    @Category(PublicTests.class)
+//    public void testPromoteSIX() {
+//        TransactionContext t1 = transactions[1];
+//
+//        LockContext r0 = dbLockContext;
+//        LockContext r1 = tableLockContext;
+//        LockContext r2 = dbLockContext.childContext("table2");
+//        LockContext r3 = dbLockContext.childContext("table3");
+//
+//        r0.acquire(t1, LockType.S);
+//        r1.acquire(t1, LockType.S);
+//        r2.acquire(t1, LockType.IS);
+//        r3.acquire(t1, LockType.S);
+//
+//        assertEquals(3, r0.getNumChildren(t1));
+//        r0.promote(t1, LockType.SIX);
+//        assertEquals(0, r0.getNumChildren(t1));
+//
+//        assertTrue(TestLockManager.holds(lockManager, t1, r0.getResourceName(), LockType.SIX));
+//        assertFalse(TestLockManager.holds(lockManager, t1, r1.getResourceName(), LockType.S));
+//        assertFalse(TestLockManager.holds(lockManager, t1, r2.getResourceName(), LockType.IS));
+//        assertFalse(TestLockManager.holds(lockManager, t1, r3.getResourceName(), LockType.S));
+//    }
+
     @Test
     @Category(PublicTests.class)
     public void testEscalateFail() {
@@ -326,7 +351,32 @@ public class TestLockContext {
 
     @Test
     @Category(PublicTests.class)
-    public void testEscalateX() {
+    public void testEscalateMultipleX() {
+        TransactionContext t1 = transactions[1];
+
+        LockContext r0 = dbLockContext;
+        LockContext r1 = tableLockContext;
+        LockContext r2 = dbLockContext.childContext("table2");
+        LockContext r3 = dbLockContext.childContext("table3");
+
+        r0.acquire(t1, LockType.IX);
+        r1.acquire(t1, LockType.X);
+        r2.acquire(t1, LockType.IX);
+        r3.acquire(t1, LockType.X);
+
+        assertEquals(3, r0.getNumChildren(t1));
+        r0.escalate(t1);
+        assertEquals(0, r0.getNumChildren(t1));
+
+        assertTrue(TestLockManager.holds(lockManager, t1, r0.getResourceName(), LockType.X));
+        assertFalse(TestLockManager.holds(lockManager, t1, r1.getResourceName(), LockType.X));
+        assertFalse(TestLockManager.holds(lockManager, t1, r2.getResourceName(), LockType.IX));
+        assertFalse(TestLockManager.holds(lockManager, t1, r3.getResourceName(), LockType.X));
+    }
+
+    @Test
+    @Category(PublicTests.class)
+    public void testEscalateSdB() {
         TransactionContext t1 = transactions[1];
 
         LockContext r0 = dbLockContext;
