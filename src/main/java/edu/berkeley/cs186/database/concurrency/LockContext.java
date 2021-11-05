@@ -205,7 +205,7 @@ public class LockContext {
         sisies.add(name);
         if (newLockType == LockType.SIX) {
             lockman.acquireAndRelease(transaction, name, newLockType, sisies);
-            numChildLocks.put(transNum, numChildLocks.get(transNum) - sisies.size());
+            numChildLocks.put(transNum, numChildLocks.get(transNum) - (sisies.size() - 1));
         } else {
             lockman.promote(transaction, this.name, newLockType);
         }
