@@ -933,14 +933,38 @@ public class Database implements AutoCloseable {
                 // TODO(proj4_part2)
                 List<Lock> locks = lockManager.getLocks(getTransaction()); //wrong order (flipped)
                 System.out.println(locks.toString());
+                ArrayList<Lock> releaseLater = new ArrayList<>();
                 for (int i = locks.size() - 1; i >= 0; i --) {
                     Lock l = locks.get(i);
                     try {
                         LockContext.fromResourceName(lockManager, l.name).release(getTransaction());
                     } catch (NoLockHeldException | InvalidLockException | UnsupportedOperationException e) {
+                        System.out.println();
+                        System.out.println(e);
+                        System.out.println(locks);
+                        System.out.println();
+                        System.out.println(lockManager.getLocks(l.name));
+                        System.out.println();
+                        System.out.println(lockManager.getLocks(getTransaction()));
+                        System.out.println();
+                        System.out.println(l);
+
+                        releaseLater.add(l);
+                    }
+                }
+
+                for (Lock l : releaseLater) {
+                    try{
+                        LockContext.fromResourceName(lockManager, l.name).release(getTransaction());
+                        System.out.println("released later");
+                        System.out.println(l);
+
+                    } catch (NoLockHeldException | InvalidLockException | UnsupportedOperationException e) {
                         System.out.println(e);
                     }
                 }
+                System.out.println(lockManager.getLocks(getTransaction()));
+
             } catch (Exception e) {
                 // There's a chance an error message from your release phase
                 // logic can get suppressed. This guarantees that the stack
