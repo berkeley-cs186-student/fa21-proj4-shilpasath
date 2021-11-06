@@ -148,7 +148,7 @@ public class LockContext {
         //checks for invalid release requests; child has keys with locks; child has transaction
         Long transNum = transaction.getTransNum();
 //        System.out.println(this.getNumChildren(transaction));
-        if (this.getNumChildren(transaction) != 0 || numChildLocks.containsKey(transNum)) {
+        if (this.getNumChildren(transaction) != 0) {
             throw new InvalidLockException("lock cannot be released (violates multigran constraints");
         }
 

@@ -118,10 +118,14 @@ public class LockUtil {
         } else {
             try {
                 parent.promote(transaction, wantedParentType);
-            } catch (DuplicateLockRequestException | NoLockHeldException e) {
+            } catch (DuplicateLockRequestException | NoLockHeldException | InvalidLockException e) {
                 System.out.println(e);
-                parent.release(transaction);
-                parent.acquire(transaction, wantedParentType);
+                System.out.println(transaction.getTransNum());
+                System.out.println(wantedParentType);
+                System.out.println(parent.getExplicitLockType(transaction));
+//                parent.release(transaction);
+//                parent.acquire(transaction, wantedParentType);
+                lockContext.lockman.acquireAndRelease(transaction, lockContext.name, wantedParentType, new ArrayList<>(Arrays.asList(lockContext.name)));
             }
         }
     }

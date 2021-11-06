@@ -931,7 +931,7 @@ public class Database implements AutoCloseable {
         public void close() {
             try {
                 // TODO(proj4_part2)
-                List<Lock> locks = lockManager.getLocks(this); //wrong order (flipped)
+                List<Lock> locks = lockManager.getLocks(getTransaction()); //wrong order (flipped)
 //                List<Lock> locksToRelease = new ArrayList<>();
 //                for (Lock l : locks) {
 //                    locksToRelease.add(0, l);
@@ -939,9 +939,9 @@ public class Database implements AutoCloseable {
                 System.out.println(locks.toString());
                 for (int i = locks.size() - 1; i >= 0; i --) {
                     Lock l = locks.get(i);
-                    System.out.println(l.toString());
+//                    System.out.println(l.toString());
                     //get lockcontext, release context
-                    LockContext.fromResourceName(lockManager, l.name).release(this);
+                    LockContext.fromResourceName(lockManager, l.name).release(getTransaction());
                 }
 
                 return;
