@@ -106,13 +106,15 @@ public class LockContext {
         //3. To get X or IX on a node, must hold IX or SIX on parent node.
         LockContext parent = parentContext();
         LockType parentLockType;
-        if (parent == null) {
-            parentLockType = LockType.NL;
-        } else {
-            parentLockType = parent.getEffectiveLockType(transaction);
-        }
-        if (!LockType.canBeParentLock(parentLockType, lockType) && parent != null) {
-            throw new InvalidLockException("invalid request to acquire");
+//        if (parent == null) {
+//            parentLockType = null;
+//        } else {
+//            parentLockType = parent.getEffectiveLockType(transaction);
+//        }
+//        parentLockType = parent.getEffectiveLockType(transaction);
+//        if (!LockType.canBeParentLock(parentLockType, lockType) && parent != null) {
+        if (parent != null && !LockType.canBeParentLock(parent.getEffectiveLockType(transaction), lockType)) {
+                throw new InvalidLockException("invalid request to acquire");
         }
         if (lockman.getLockType(transaction, name) != LockType.NL) {
             throw new DuplicateLockRequestException("transaction already holds lock on resource");

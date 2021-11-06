@@ -45,14 +45,14 @@ public class LockUtil {
         LockType explicitLockType = lockContext.getExplicitLockType(transaction);
         // TODO(proj4_part2): implement
         LockType wantedParentType = LockType.parentLock(requestType);
-        if (requestType == LockType.NL || requestType.equals(explicitLockType)) {
+        if (requestType == LockType.NL || requestType.equals(explicitLockType)  || (explicitLockType == LockType.X && requestType == LockType.S)) {
             return;
         }
 
         // parents
         if (parentContext != null && !(explicitLockType == LockType.IX
                 && requestType == LockType.S) && !LockType.canBeParentLock(parentContext.getExplicitLockType(transaction), requestType)) {
-            promoteParents(lockContext, transaction, wantedParentType);
+            promoteParentsBetter(lockContext.parentContext(), transaction, wantedParentType);
         }
         // kids
         boolean releaseChildren = false;
@@ -112,7 +112,7 @@ public class LockUtil {
             return;
         }
         promoteParents(lockContext.parentContext(), transaction, LockType.parentLock(wantedParentType));
-
+        LockType parentType = parent.getEffectiveLockType(transaction);
         if (parent.getExplicitLockType(transaction) == LockType.NL) {
             parent.acquire(transaction, wantedParentType);
         } else {
@@ -125,7 +125,31 @@ public class LockUtil {
                 System.out.println(parent.getExplicitLockType(transaction));
 //                parent.release(transaction);
 //                parent.acquire(transaction, wantedParentType);
-                lockContext.lockman.acquireAndRelease(transaction, lockContext.name, wantedParentType, new ArrayList<>(Arrays.asList(lockContext.name)));
+//                lockContext.lockman.acquireAndRelease(transaction, lockContext.name, wantedParentType, new ArrayList<>(Arrays.asList(lockContext.name)));
+            }
+        }
+    }
+
+    public static void promoteParentsBetter(LockContext lockContext, TransactionContext transaction, LockType wantedParentType) {
+        if (lockContext == null) {
+            return;
+        }
+        promoteParentsBetter(lockContext.parentContext(), transaction, LockType.parentLock(wantedParentType));
+
+        LockType lockType = lockContext.getEffectiveLockType(transaction);
+        if (lockType == LockType.NL) {
+            lockContext.acquire(transaction, wantedParentType);
+        } else {
+            try {
+                lockContext.promote(transaction, wantedParentType);
+            } catch (DuplicateLockRequestException | NoLockHeldException | InvalidLockException e) {
+                System.out.println(e);
+                System.out.println(transaction.getTransNum());
+                System.out.println(wantedParentType);
+                System.out.println(lockContext.getExplicitLockType(transaction));
+//                parent.release(transaction);
+//                parent.acquire(transaction, wantedParentType);
+//                lockContext.lockman.acquireAndRelease(transaction, lockContext.name, wantedParentType, new ArrayList<>(Arrays.asList(lockContext.name)));
             }
         }
     }
